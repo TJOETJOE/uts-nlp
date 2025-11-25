@@ -1,6 +1,3 @@
-
----
-
 # 🌐 **UTS NLP – Sentiment Analysis of YouTube Comments**
 
 Mata Kuliah: **IF400105 – Natural Language Processing**
@@ -12,20 +9,19 @@ Tahun Akademik **2025/2026**
 
 # 📌 **Deskripsi Proyek**
 
-Proyek ini adalah implementasi UTS mata kuliah **Natural Language Processing**, dengan tujuan melakukan **analisis sentimen komentar YouTube** terhadap sebuah topik tertentu.
+Proyek ini merupakan implementasi UTS mata kuliah **Natural Language Processing**, yang bertujuan untuk menganalisis sentimen komentar pada salah satu video YouTube.
 
-Analisis dilakukan melalui langkah-langkah berikut:
+Analisis mencakup proses:
+✔ Scraping komentar YouTube
+✔ Pembersihan teks
+✔ Preprocessing NLP
+✔ Auto-labeling sentimen (TextBlob)
+✔ Pemodelan Machine Learning
+✔ Prediksi sentimen seluruh dataset
+✔ Analisis hasil sentimen
 
-1. **Scraping komentar YouTube** menggunakan YouTube Data API
-2. **Menggabungkan dataset** (3 file CSV × 500 komentar = total 1500 komentar)
-3. **Cleaning dan preprocessing teks**
-4. **Sentiment auto-labeling** menggunakan TextBlob
-5. **Pemodelan machine learning** menggunakan:
-
-   * Multinomial Naive Bayes
-   * Logistic Regression
-6. **Prediksi sentimen seluruh dataset**
-7. **Analisis hasil sentimen positif/negatif/neutral**
+Total komentar yang dianalisis:
+👉 **1500 komentar YouTube** (3 file × 500 komentar)
 
 ---
 
@@ -55,30 +51,38 @@ uts-nlp/
 
 # 🧹 **1. Scraping Data YouTube**
 
-Komentar YouTube diambil menggunakan **YouTube Data API v3** melalui endpoint:
+Scraping dilakukan menggunakan **YouTube Data API v3** dengan endpoint:
 
 ```
 commentThreads().list(part='snippet,replies', videoId=VIDEO_ID)
 ```
 
-Scraping dilakukan bertahap menggunakan `nextPageToken` sampai seluruh komentar diambil.
+Pagination ditangani menggunakan `nextPageToken` hingga seluruh komentar diperoleh.
 
 * Total file: **3 CSV**
-* Jumlah per file: **500 komentar**
-* Total dataset: **1500 komentar**
+* Total komentar: **1500**
+* Kolom dataset:
 
-Kolom hasil scraping:
-
-* `publishedAt`
-* `authorDisplayName`
-* `textDisplay`
-* `likeCount`
+  * `publishedAt`
+  * `authorDisplayName`
+  * `textDisplay`
+  * `likeCount`
 
 ---
 
 # 🧼 **2. Cleaning Data**
 
-Komentar dibersihkan menggunakan fungsi:
+Cleaning dilakukan untuk menghilangkan noise pada teks.
+
+Tahapan:
+
+* lowercase
+* hapus URL
+* hapus mention `@username`
+* hapus simbol & emoji
+* hapus spasi berlebih
+
+Kode:
 
 ```python
 def cleaning(text):
@@ -90,27 +94,17 @@ def cleaning(text):
     return text
 ```
 
-Cleaning menghilangkan:
-
-✔ URL
-✔ Mention `@user`
-✔ Emoji dan simbol
-✔ White spaces berlebih
-✔ Huruf besar → kecil
-
 Hasil disimpan pada kolom **`clean_text`**.
 
 ---
 
-# 🔧 **3. Preprocessing**
+# 🔧 **3. Preprocessing (NLP)**
 
-Preprocessing dilakukan dalam **bahasa Inggris** karena komentar berbahasa Inggris.
+Karena komentar berbahasa Inggris, preprocessing menggunakan:
 
-Tahapan:
-
-* Tokenization
-* Stopword removal (NLTK English stopwords)
-* Lemmatization (WordNetLemmatizer)
+* Tokenization (NLTK)
+* Stopword removal
+* Lemmatization (WordNet)
 
 Kode:
 
@@ -122,42 +116,31 @@ def preprocess(text):
     return " ".join(tokens)
 ```
 
-Hasil disimpan di kolom **`prep_text`**.
+Hasil disimpan ke **`prep_text`**.
 
 ---
 
 # 🧪 **4. Auto Sentiment Labeling**
 
-Karena komentar tidak memiliki label asli, digunakan auto-labeling menggunakan **TextBlob Polarity**:
+Komentar diberi label secara otomatis menggunakan **TextBlob polarity**:
 
-* polarity > 0 → **positive**
-* polarity < 0 → **negative**
-* polarity = 0 → **neutral**
+* polarity > 0 → *positive*
+* polarity < 0 → *negative*
+* polarity = 0 → *neutral*
 
-```python
-def get_sentiment(text):
-    polarity = TextBlob(text).sentiment.polarity
-    if polarity > 0:
-        return "positive"
-    elif polarity < 0:
-        return "negative"
-    else:
-        return "neutral"
-```
-
-Label disimpan dalam kolom **`sentiment`**.
+Hasil sentimen disimpan pada kolom **`sentiment`**.
 
 ---
 
-# 🤖 **5. Modeling Machine Learning**
+# 🤖 **5. Machine Learning Modeling**
 
-Dua model digunakan:
+Dua model machine learning digunakan:
 
 ---
 
-### 🔵 **Model 1: Multinomial Naive Bayes**
+## 🔹 **Model 1: Multinomial Naive Bayes**
 
-Menggunakan TF-IDF sebagai fitur:
+TF-IDF digunakan sebagai fitur:
 
 ```python
 tfidf = TfidfVectorizer(ngram_range=(1,2), min_df=2, max_df=0.95)
@@ -170,107 +153,96 @@ nb_model = MultinomialNB()
 nb_model.fit(X_train_tfidf, y_train)
 ```
 
-### 📈 **Hasil Evaluasi:**
-
-(Akan muncul dari output code, isi manual setelah dijalankan)
-
-Misalnya:
-
-* Accuracy: **0.82**
-* Precision, Recall, F1 tiap kelas
-* Confusion matrix
-
 ---
 
-### 🔵 **Model 2: Logistic Regression**
+## 🔹 **Model 2: Logistic Regression**
 
 ```python
 logreg_model = LogisticRegression(max_iter=1000)
-```
-
-### 📈 **Hasil Evaluasi:**
-
-(isi sesuai output Colab)
-
-Contoh:
-
-* Accuracy: **0.85**
-* Precision, Recall, F1 lebih stabil dibanding Naive Bayes
-
----
-
-# 🧮 **6. Prediksi 1500 Komentar**
-
-Model dengan akurasi terbaik (Logistic Regression atau Naive Bayes) digunakan untuk memprediksi seluruh komentar:
-
-```python
-all_data['pred_sentiment'] = nb_model.predict(X_all_tfidf)
+logreg_model.fit(X_train_tfidf, y_train)
 ```
 
 ---
 
-# 📊 **7. Hasil Analisis Sentimen**
+## 🔍 **Evaluasi Model**
 
-(Angka di bawah ini kamu isi dari output sebenarnya)
+Evaluasi dilakukan menggunakan:
 
-| Sentimen  | Jumlah   |
-| --------- | -------- |
-| Positive  | XXX      |
-| Negative  | XXX      |
-| Neutral   | XXX      |
-| **Total** | **1500** |
+* Accuracy
+* Precision
+* Recall
+* F1-score
+* Confusion Matrix
 
----
-
-# 📝 **8. Kesimpulan**
-
-Berdasarkan hasil analisis sentimen pada **1500 komentar YouTube**, dapat disimpulkan:
-
-* Mayoritas komentar bernada **(positif / negatif / netral)**.
-* Model machine learning dengan performa terbaik adalah **(Naive Bayes atau Logistic Regression)**.
-* Proses NLP seperti **cleaning, preprocessing, dan TF-IDF** membantu meningkatkan akurasi model.
-* Proyek ini berhasil memenuhi semua instruksi UTS:
-  ✔ Scraping
-  ✔ Cleaning
-  ✔ Preprocessing
-  ✔ Machine Learning Modeling
-  ✔ Analisis Hasil Sentimen
-  ✔ Dokumentasi Proyek
+Model terbaik digunakan untuk memprediksi seluruh dataset (**Naive Bayes** yang digunakan dalam prediksi final).
 
 ---
 
-# ▶ **9. Cara Menjalankan Proyek**
+# 📊 **6. Hasil Analisis Sentimen (1500 komentar)**
 
-### 1. Clone repo:
+Hasil prediksi pada seluruh dataset:
+
+| Sentimen     | Jumlah   | Persentase |
+| ------------ | -------- | ---------- |
+| **Positive** | **957**  | **63.8%**  |
+| **Neutral**  | **407**  | **27.1%**  |
+| **Negative** | **136**  | **9.1%**   |
+| **Total**    | **1500** | 100%       |
+
+---
+
+# 📝 **7. Kesimpulan**
+
+Berdasarkan analisis sentimen terhadap 1500 komentar YouTube:
+
+* **Mayoritas komentar (63.8%) adalah positif**, menunjukkan bahwa topik video tersebut mendapat sambutan yang baik dari penonton.
+* Komentar **neutral** cukup besar (27.1%), biasanya berupa informasi atau opini tanpa emosi kuat.
+* Komentar **negatif** relatif sedikit (9.1%), menunjukkan minimnya kritik keras.
+* Pemodelan machine learning dengan **Naive Bayes + TF-IDF** berhasil memprediksi sentimen dengan baik, dan pipeline NLP membantu meningkatkan kualitas data sebelum modeling.
+
+Proyek ini telah menyelesaikan semua instruksi UTS:
+✔ Scraping
+✔ Cleaning
+✔ Preprocessing
+✔ Modeling
+✔ Analisis hasil
+✔ Dokumentasi
+
+---
+
+# ▶️ **8. Cara Menjalankan Proyek**
+
+Clone repo:
 
 ```
 git clone https://github.com/TJOETJOE/uts-nlp.git
+cd uts-nlp
 ```
 
-### 2. Jalankan notebook:
-
-* `scraping/Copy_of_YoutubeCommentsCrawlerV2.ipynb` untuk scraping
-* `code/sentiment_analysis.ipynb` untuk NLP & ML
-
-### 3. Install dependency:
+Install dependencies:
 
 ```
-pip install textblob nltk scikit-learn pandas
+pip install pandas nltk textblob scikit-learn
 ```
 
-### 4. Jalankan seluruh sel notebook.
+Jalankan notebook:
+
+* `scraping/Copy_of_YoutubeCommentsCrawlerV2.ipynb`
+* `code/sentiment_analysis.ipynb`
 
 ---
 
-# 📎 **10. Lampiran (Screenshot)**
+# 📎 **9. Lampiran**
 
-Tambahkan di repo:
-✔ Screenshot video YouTube
-✔ Screenshot komentar
-✔ Screenshot scraping berjalan
-✔ Screenshot model ML (accuracy report)
-✔ Screenshot plot hasil sentimen
+Tambahkan screenshot berikut ke repo atau laporan:
 
----
+* Screenshot video YouTube
+* Screenshot komentar
+* Screenshot scraping berjalan
+* Screenshot preprocessing
+* Screenshot hasil akurasi model
+* Screenshot grafik hasil sentimen
+
+
 
 
